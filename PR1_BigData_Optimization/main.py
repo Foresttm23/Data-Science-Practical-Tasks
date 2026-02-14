@@ -98,12 +98,12 @@ if __name__ == "__main__":
 
     output_path = Path(SELECTED_COLS_FILE_NAME)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    # selected_cols = get_selected_cols(output_path, SAMPLE_FILE_NAME, all_columns)
-    selected_cols = ['status']
+    selected_cols = get_selected_cols(output_path, SAMPLE_FILE_NAME, all_columns)
+    # selected_cols = ['status']
 
     sample_df = pd.read_parquet(SAMPLE_FILE_NAME, columns=selected_cols)
-    # columns_to_copy = ['width', 'height']
-    # copy_df = sample_df[columns_to_copy].copy()
+    columns_to_copy = ['width', 'height']
+    copy_df = sample_df[columns_to_copy].copy()
 
     categorize_df(sample_df, selected_cols)
-    # compare_apply_vs_vectorize(copy_df)
+    compare_apply_vs_vectorize(copy_df)

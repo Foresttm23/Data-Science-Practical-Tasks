@@ -8,19 +8,17 @@ import pyarrow.parquet as pq
 # DATASET USED https://huggingface.co/datasets/laion/relaion2B-en-research-safe/blob/main/part-00000-339dc23d-0869-4dc0-9390-b4036fcc80c2-c000.snappy.parquet
 
 SAMPLE_FILE_NAME = "part-00000-339dc23d-0869-4dc0-9390-b4036fcc80c2-c000.snappy.parquet"  # Assuming the installed file is from the link above
-SAMPLE_SELECTED_COLS_FILE_NAME = "metadata/selected_cols.json"  # Where the selected columns are saved
+SELECTED_COLS_FILE_NAME = "metadata/selected_cols.json"  # Where the selected columns are saved
+PREVIEW_FILE_NAME = "metadata/preview_sample.json"
 
 
-def get_selected_cols(metadata_file_name: str, data_file_name: str, cols: list) -> list:
-    output_path = Path(metadata_file_name)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    if Path.exists(output_path):
-        selected = json.loads(output_path.read_text())
+def get_selected_cols(out_path: Path, sample_file_name: str, cols: list) -> list:
+    if Path.exists(out_path):
+        selected = json.loads(out_path.read_text())
     else:
-        df = pd.read_parquet(data_file_name)
+        df = pd.read_parquet(sample_file_name)
         selected = select_cols(df, cols)
-        with open(output_path, "w") as f:
+        with open(out_path, "w") as f:
             json.dump(selected, f)
 
     print(f"\n\nSelected columns: {selected}")
@@ -31,7 +29,7 @@ def select_cols(df: pd.DataFrame, cols: list) -> list:
     selected = []
 
     for col in cols:
-        unique_count = df[col].nunique()
+        unique_count: int = df[col].nunique()
         total_count = len(df)
         print(f"Column '{col}':\n {unique_count} unique values out of {total_count}\n\n")
 
@@ -82,19 +80,30 @@ def compare_apply_vs_vectorize(df):
     print(f"Vectorize time: {res_vectorize_time:.2f} seconds")
 
 
+def save_preview_data(out_path: Path, sample_file_name: str) -> None:
+    if not Path.exists(out_path):
+        preview_df = pd.read_parquet(sample_file_name, engine='pyarrow').head(10)
+        preview_df.to_json(out_path, orient='records', indent=4)
+
+
 if __name__ == "__main__":
     schema = pq.read_schema(SAMPLE_FILE_NAME)
+
+    output_path = Path(PREVIEW_FILE_NAME)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    save_preview_data(output_path, SAMPLE_FILE_NAME)
 
     all_columns = schema.names
     print(f"All sample colons names:\n{all_columns}")
 
-    selected_cols = get_selected_cols(SAMPLE_SELECTED_COLS_FILE_NAME, SAMPLE_FILE_NAME, all_columns)
-    # selected_cols = ['status']
+    output_path = Path(SELECTED_COLS_FILE_NAME)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    # selected_cols = get_selected_cols(output_path, SAMPLE_FILE_NAME, all_columns)
+    selected_cols = ['status']
 
-    data_df = pd.read_parquet(SAMPLE_FILE_NAME, columns=selected_cols)
+    sample_df = pd.read_parquet(SAMPLE_FILE_NAME, columns=selected_cols)
+    # columns_to_copy = ['width', 'height']
+    # copy_df = sample_df[columns_to_copy].copy()
 
-    columns_to_copy = ['width', 'height']
-    copy_df = data_df[columns_to_copy].copy()
-
-    categorize_df(data_df, selected_cols)
-    compare_apply_vs_vectorize(copy_df)
+    categorize_df(sample_df, selected_cols)
+    # compare_apply_vs_vectorize(copy_df)

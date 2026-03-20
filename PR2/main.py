@@ -33,7 +33,6 @@ def analyze_efficiency(data_chunk):
 
 def prepare_data(df):
     initial_count = len(df)
-    # Обов'язково очищаємо критичні дані
     df = df.dropna(subset=['energy_mean', 'energy_max', 'energy_std'])
     print(f"Deleted {initial_count - len(df)} with missing values")
 

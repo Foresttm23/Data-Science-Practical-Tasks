@@ -1,4 +1,5 @@
 *.parquet
+*.csv
 *.idea
 *.xml
 .venv

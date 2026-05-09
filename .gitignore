@@ -4,7 +4,7 @@
 *.xml
 .venv
 
-
+test.py
 __pycache__/
 *.pyc
 *.pyo

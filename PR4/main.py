@@ -10,22 +10,26 @@ from statsmodels.tsa.arima.model import ARIMA
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 from tensorflow.keras.models import Sequential
 
-# Приховуємо зайві повідомлення TensorFlow (oneDNN)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 
-# 1. Генерація синтетичних даних (Емуляція споживання енергії)
-def generate_data(n_days=100):
-    time = np.arange(0, n_days * 24)
-    # Сезонність: денна (24г) та тижнева (168г) + тренд + шум
-    consumption = 50 + 20 * np.sin(2 * np.pi * time / 24) + 10 * np.sin(
-        2 * np.pi * time / 168) + 0.05 * time + np.random.normal(0, 2, len(time))
+def load_real_data():
+    """Завантажує реальні дані енергоспоживання з репозиторію OPSD."""
+    print("Завантаження реальних даних з мережі...")
+    url = "https://data.open-power-system-data.org/time_series/2020-10-06/time_series_60min_singleindex.csv"
 
-    df = pd.DataFrame({'ds': pd.date_range(start='2023-01-01', periods=len(time), freq='h'), 'y': consumption})
-    return df
+    cols = ['utc_timestamp', 'DE_load_actual_entsoe_transparency']
+    df = pd.read_csv(url, usecols=cols, parse_dates=['utc_timestamp'])
+
+    df = df.rename(columns={'utc_timestamp': 'ds', 'DE_load_actual_entsoe_transparency': 'y'})
+
+    df['ds'] = df['ds'].dt.tz_localize(None)
+    df = df.dropna().reset_index(drop=True)
+
+    return df.iloc[8000:8000 + (24 * 60)].reset_index(drop=True)
 
 
-df = generate_data(60)
+df = load_real_data()
 train_size = int(len(df) * 0.8)
 train, test = df.iloc[:train_size], df.iloc[train_size:]
 
@@ -53,7 +57,7 @@ except Exception as e:
     print(f"ПОМИЛКА PROPHET: {e}")
     print("Використовується базовий прогноз для Prophet через проблеми з оточенням.")
     print("-" * 30)
-    # Запасний варіант, якщо Prophet не працює
+
     prophet_predictions = np.full(len(test), train['y'].mean())
 
 print("Навчання LSTM...")
@@ -100,12 +104,13 @@ def evaluate(actual, pred, name):
 
 print("\nМетрики якості:")
 metrics = {"ARIMA": evaluate(actual_test, arima_final, "ARIMA"),
-    "Prophet": evaluate(actual_test, prophet_final, "Prophet"), "LSTM": evaluate(actual_test, lstm_predictions, "LSTM")}
+           "Prophet": evaluate(actual_test, prophet_final, "Prophet"),
+           "LSTM": evaluate(actual_test, lstm_predictions, "LSTM")}
 
 plt.figure(figsize=(14, 7))
 plt.plot(df['ds'].iloc[train_size + look_back:], actual_test, label='Фактичні дані', color='black', alpha=0.5)
 plt.plot(df['ds'].iloc[train_size + look_back:], arima_final, label='ARIMA', linestyle='--')
-plt.plot(df['ds'].iloc[train_size + look_back:], prophet_final, label='Prophet (Baseline)', linestyle='-.')
+plt.plot(df['ds'].iloc[train_size + look_back:], prophet_final, label='Prophet', linestyle='-.')
 plt.plot(df['ds'].iloc[train_size + look_back:], lstm_predictions, label='LSTM', color='red', linewidth=2)
 plt.title('Порівняння моделей прогнозування енергії (Виправлено)')
 plt.xlabel('Дата/Час')

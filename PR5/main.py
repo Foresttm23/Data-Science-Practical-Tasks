@@ -1,35 +1,39 @@
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import seaborn as sns
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
+
 def normalize_data(df, columns):
     """
-    Нормалізація: приведення значень до діапазону [0, 1].
+    Нормалізація
     """
     scaler = MinMaxScaler()
     df_norm = df.copy()
     df_norm[columns] = scaler.fit_transform(df[columns])
     return df_norm
 
+
 def standardize_data(df, columns):
     """
-    Стандартизація: приведення до середнього 0 та стандартного відхилення 1.
+    Стандартизація
     """
     scaler = StandardScaler()
     df_std = df.copy()
     df_std[columns] = scaler.fit_transform(df[columns])
     return df_std
 
+
 def create_sample_data():
     np.random.seed(42)
     data = {
-        'Вік': np.random.randint(18, 65, 100),              # Діапазон [18, 65]
-        'Дохід': np.random.normal(50000, 15000, 100),      # Діапазон [~10k, ~90k]
-        'Рейтинг': np.random.uniform(1, 5, 100)            # Діапазон [1, 5]
+        'Вік': np.random.randint(18, 65, 100),
+        'Дохід': np.random.normal(50000, 15000, 100),
+        'Рейтинг': np.random.uniform(1, 5, 100)
     }
     return pd.DataFrame(data)
+
 
 df = create_sample_data()
 cols_to_scale = ['Вік', 'Дохід', 'Рейтинг']
@@ -42,11 +46,11 @@ print(df.head())
 print("\nСтатистика оригінальних даних (Mean, Std):")
 print(df.agg(['mean', 'std']).round(2))
 
-print("\n" + "="*50)
+print("\n" + "=" * 50)
 print("Статистика після Нормалізації (Min, Max):")
 print(df_normalized[cols_to_scale].agg(['min', 'max']).round(2))
 
-print("\n" + "="*50)
+print("\n" + "=" * 50)
 print("Статистика після Стандартизації (Mean, Std):")
 print(df_standardized[cols_to_scale].agg(['mean', 'std']).round(2))
 
